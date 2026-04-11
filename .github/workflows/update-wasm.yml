@@ -1,0 +1,46 @@
+name: Update WASM Playground
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-wasm:
+    name: Pull latest WASM artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download WASM release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p playground
+          gh release download wasm-latest \
+            --repo ChaiScript/ChaiScript \
+            --pattern 'chaiscript.js' \
+            --pattern 'chaiscript.wasm' \
+            --dir playground \
+            --clobber
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add playground/
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update WASM playground artifacts from ChaiScript/ChaiScript"
+          git push

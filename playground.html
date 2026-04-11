@@ -1,0 +1,196 @@
+---
+title: Playground
+---
+
+<!DOCTYPE HTML>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+
+<head>
+
+<title>ChaiScript - Interactive Playground</title>
+{% include common.html %}
+
+<style>
+  .playground-wrap {
+    display: flex;
+    gap: 0;
+    min-height: 500px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .playground-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .playground-panel-header {
+    background: #f5f5f5;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    border-bottom: 1px solid #ddd;
+  }
+  .playground-divider {
+    width: 2px;
+    background: #ddd;
+  }
+  #chai-input {
+    flex: 1;
+    background: #fff;
+    color: #333;
+    border: none;
+    padding: 12px;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    tab-size: 2;
+  }
+  #chai-output {
+    flex: 1;
+    background: #fafafa;
+    padding: 12px;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .chai-output-line { color: #333; }
+  .chai-output-error { color: #d9534f; }
+  #chai-status { font-size: 0.85rem; }
+  #chai-status.ready { color: #5cb85c; }
+  #chai-status.loading { color: #f0ad4e; }
+  #chai-status.error { color: #d9534f; }
+  .playground-controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .playground-controls .hint {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: #999;
+  }
+</style>
+
+</head>
+
+<body>
+
+{% include header.html %}
+
+<div class="well well-sm">
+  <h3>Interactive Playground <span id="chai-status" class="loading">Loading&hellip;</span></h3>
+  <p>Write ChaiScript code and run it directly in your browser using WebAssembly.</p>
+</div>
+
+<div class="body-with-margin">
+  <div class="playground-wrap">
+    <div class="playground-panel">
+      <div class="playground-panel-header">Input</div>
+      <textarea id="chai-input" spellcheck="false">// Welcome to ChaiScript!
+// Write your code here and click Run (or press Ctrl+Enter).
+
+def greet(name) {
+  return "Hello, " + name + "!"
+}
+
+print(greet("World"))
+print(greet("ChaiScript"))
+
+// Math example
+def factorial(n) {
+  if (n &lt;= 1) { return 1 }
+  return n * factorial(n - 1)
+}
+
+print("5! = " + to_string(factorial(5)))
+print("10! = " + to_string(factorial(10)))
+</textarea>
+    </div>
+    <div class="playground-divider"></div>
+    <div class="playground-panel">
+      <div class="playground-panel-header">Output</div>
+      <div id="chai-output"></div>
+    </div>
+  </div>
+
+  <div class="playground-controls">
+    <button id="btn-run" class="btn btn-danger" disabled>Run</button>
+    <button id="btn-clear" class="btn btn-default">Clear</button>
+    <span class="hint">Ctrl+Enter to run</span>
+  </div>
+</div>
+
+<script>
+  var outputEl = document.getElementById('chai-output');
+  var inputEl = document.getElementById('chai-input');
+  var btnRun = document.getElementById('btn-run');
+  var btnClear = document.getElementById('btn-clear');
+  var statusEl = document.getElementById('chai-status');
+
+  function appendOutput(text, className) {
+    var line = document.createElement('div');
+    line.className = className || 'chai-output-line';
+    line.textContent = text;
+    outputEl.appendChild(line);
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+
+  var Module = {
+    print: function(text) {
+      appendOutput(text);
+    },
+    printErr: function(text) {
+      appendOutput(text, 'chai-output-error');
+    },
+    onRuntimeInitialized: function() {
+      statusEl.textContent = 'Ready';
+      statusEl.className = 'ready';
+      btnRun.disabled = false;
+    }
+  };
+
+  function runCode() {
+    var code = inputEl.value;
+    if (!code.trim()) { return; }
+
+    appendOutput('> Running...', 'chai-output-line');
+    try {
+      Module.eval(code);
+    } catch (e) {
+      appendOutput('Error: ' + e.message, 'chai-output-error');
+    }
+    appendOutput('', 'chai-output-line');
+  }
+
+  btnRun.addEventListener('click', runCode);
+  btnClear.addEventListener('click', function() {
+    outputEl.innerHTML = '';
+  });
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      runCode();
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      var start = this.selectionStart;
+      var end = this.selectionEnd;
+      this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 2;
+    }
+  });
+</script>
+<script src="/playground/chaiscript.js"></script>
+
+</body>
