@@ -1,0 +1,59 @@
+name: Update Grammar Railroad Diagram
+
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-grammar:
+    name: Generate railroad diagram from EBNF grammar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download EBNF grammar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p grammar
+          gh api repos/ChaiScript/ChaiScript/contents/grammar/chaiscript.ebnf \
+            --jq '.content' | base64 -d > grammar/chaiscript.ebnf
+
+      - name: Download rr-webapp
+        run: |
+          curl -sL \
+            "https://repo1.maven.org/maven2/de/bottlecaps/rr/rr-webapp/2.6/rr-webapp-2.6.war" \
+            -o /tmp/rr.war
+
+      - name: Generate railroad diagram
+        run: |
+          java -jar /tmp/rr.war \
+            -out:grammar/railroad.xhtml \
+            grammar/chaiscript.ebnf
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add grammar/
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update grammar railroad diagram from ChaiScript/ChaiScript"
+          git push

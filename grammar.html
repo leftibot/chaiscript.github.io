@@ -1,0 +1,50 @@
+---
+title: Grammar
+---
+
+<!DOCTYPE HTML>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+
+<head>
+<title>ChaiScript - Grammar Railroad Diagram</title>
+{% include common.html %}
+
+<style>
+  .grammar-iframe {
+    width: 100%;
+    min-height: 800px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+  }
+  .grammar-links {
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+</style>
+
+</head>
+
+<body>
+
+{% include header.html %}
+
+<div class="well well-sm">
+  <h3>Grammar Railroad Diagram</h3>
+  <p>Navigable railroad diagram of ChaiScript's syntax, generated from the
+    <a href="https://github.com/ChaiScript/ChaiScript/blob/develop/grammar/chaiscript.ebnf">EBNF grammar</a>
+    using <a href="https://github.com/GuntherRademacher/rr">RR</a>.</p>
+</div>
+
+<div class="body-with-margin">
+  <iframe class="grammar-iframe" src="/grammar/railroad.xhtml" title="ChaiScript grammar railroad diagram"></iframe>
+
+  <div class="grammar-links">
+    <p>
+      <a href="/grammar/railroad.xhtml">Open full-page diagram</a> &middot;
+      <a href="/grammar/chaiscript.ebnf">Download EBNF source</a>
+    </p>
+  </div>
+</div>
+
+</body>

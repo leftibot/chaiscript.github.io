@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regression test for issue #6: WASM playground
+# Regression tests for the ChaiScript website build artifacts.
 # Validates that all required files exist and contain expected content.
 set -euo pipefail
 
@@ -39,6 +39,22 @@ assert_file_contains "playground.html" "header.html"
 
 # 3. Navigation includes playground link
 assert_file_contains "_includes/header.html" "playground"
+
+# 4. Grammar railroad diagram workflow exists and runs hourly
+assert_file_exists ".github/workflows/update-grammar.yml"
+assert_file_contains ".github/workflows/update-grammar.yml" "schedule"
+assert_file_contains ".github/workflows/update-grammar.yml" "cron:"
+assert_file_contains ".github/workflows/update-grammar.yml" "chaiscript.ebnf"
+assert_file_contains ".github/workflows/update-grammar.yml" "ChaiScript/ChaiScript"
+assert_file_contains ".github/workflows/update-grammar.yml" "rr-webapp"
+
+# 5. Grammar page exists with required elements
+assert_file_exists "grammar.html"
+assert_file_contains "grammar.html" "header.html"
+assert_file_contains "grammar.html" "railroad"
+
+# 6. Navigation includes grammar link
+assert_file_contains "_includes/header.html" "grammar"
 
 if [ "$FAIL" -ne 0 ]; then
   echo ""
