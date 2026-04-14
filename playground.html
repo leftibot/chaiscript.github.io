@@ -11,12 +11,61 @@ title: Playground
 {% include common.html %}
 
 <style>
-  .playground-wrap {
+  .playground-outer {
     display: flex;
     gap: 0;
     min-height: 500px;
+  }
+  .examples-sidebar {
+    width: 220px;
+    min-width: 220px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 4px 0 0 4px;
+    background: #f9f9f9;
+    overflow-y: auto;
+  }
+  .examples-sidebar-header {
+    background: #f5f5f5;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    border-bottom: 1px solid #ddd;
+  }
+  .example-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    border-bottom: 1px solid #eee;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #555;
+    transition: background 0.15s;
+  }
+  .example-item:hover {
+    background: #eef;
+  }
+  .example-item.active {
+    background: #d9534f;
+    color: #fff;
+  }
+  .playground-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .playground-wrap {
+    display: flex;
+    gap: 0;
+    flex: 1;
+    border: 1px solid #ddd;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
     overflow: hidden;
   }
   .playground-panel {
@@ -79,6 +128,12 @@ title: Playground
     font-size: 0.75rem;
     color: #999;
   }
+  .playground-controls label {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0;
+    cursor: pointer;
+  }
 </style>
 
 </head>
@@ -93,40 +148,30 @@ title: Playground
 </div>
 
 <div class="body-with-margin">
-  <div class="playground-wrap">
-    <div class="playground-panel">
-      <div class="playground-panel-header">Input</div>
-      <textarea id="chai-input" spellcheck="false">// Welcome to ChaiScript!
-// Write your code here and click Run (or press Ctrl+Enter).
-
-def greet(name) {
-  return "Hello, " + name + "!"
-}
-
-print(greet("World"))
-print(greet("ChaiScript"))
-
-// Math example
-def factorial(n) {
-  if (n &lt;= 1) { return 1 }
-  return n * factorial(n - 1)
-}
-
-print("5! = " + to_string(factorial(5)))
-print("10! = " + to_string(factorial(10)))
-</textarea>
+  <div class="playground-outer">
+    <div class="examples-sidebar">
+      <div class="examples-sidebar-header">Examples</div>
     </div>
-    <div class="playground-divider"></div>
-    <div class="playground-panel">
-      <div class="playground-panel-header">Output</div>
-      <div id="chai-output"></div>
-    </div>
-  </div>
+    <div class="playground-main">
+      <div class="playground-wrap">
+        <div class="playground-panel">
+          <div class="playground-panel-header">Input</div>
+          <textarea id="chai-input" spellcheck="false"></textarea>
+        </div>
+        <div class="playground-divider"></div>
+        <div class="playground-panel">
+          <div class="playground-panel-header">Output</div>
+          <div id="chai-output"></div>
+        </div>
+      </div>
 
-  <div class="playground-controls">
-    <button id="btn-run" class="btn btn-danger" disabled>Run</button>
-    <button id="btn-clear" class="btn btn-default">Clear</button>
-    <span class="hint">Ctrl+Enter to run</span>
+      <div class="playground-controls">
+        <button id="btn-run" class="btn btn-danger" disabled>Run</button>
+        <button id="btn-clear" class="btn btn-default">Clear</button>
+        <label><input type="checkbox" id="chk-live" checked> Live execution</label>
+        <span class="hint">Ctrl+Enter to run</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -136,6 +181,86 @@ print("10! = " + to_string(factorial(10)))
   var btnRun = document.getElementById('btn-run');
   var btnClear = document.getElementById('btn-clear');
   var statusEl = document.getElementById('chai-status');
+  var chkLive = document.getElementById('chk-live');
+  var sidebar = document.querySelector('.examples-sidebar');
+  var debounceTimer = null;
+  var runtimeReady = false;
+
+  var examples = [
+    {
+      name: "Hello World",
+      code: '// Hello World\nprint("Hello, ChaiScript!")\n'
+    },
+    {
+      name: "Variables &amp; Types",
+      code: '// Variables & Types\nvar x = 42\nvar pi = 3.14159\nvar name = "ChaiScript"\nvar flag = true\n\nprint("x = " + to_string(x))\nprint("pi = " + to_string(pi))\nprint("name = " + name)\nprint("flag = " + to_string(flag))\n\n// Type inspection\nprint("type of x: " + type_name(x))\nprint("type of pi: " + type_name(pi))\nprint("type of name: " + type_name(name))\n'
+    },
+    {
+      name: "Functions",
+      code: '// Functions\ndef greet(name) {\n  return "Hello, " + name + "!"\n}\n\ndef factorial(n) {\n  if (n <= 1) { return 1 }\n  return n * factorial(n - 1)\n}\n\ndef fibonacci(n) {\n  if (n <= 1) { return n }\n  return fibonacci(n - 1) + fibonacci(n - 2)\n}\n\nprint(greet("World"))\nprint("5! = " + to_string(factorial(5)))\nprint("fib(10) = " + to_string(fibonacci(10)))\n'
+    },
+    {
+      name: "Conditionals",
+      code: '// Conditionals\ndef classify(n) {\n  if (n > 0) {\n    return "positive"\n  } else if (n < 0) {\n    return "negative"\n  } else {\n    return "zero"\n  }\n}\n\nprint(classify(5))\nprint(classify(-3))\nprint(classify(0))\n\n// Ternary-style with inline if\nvar x = 10\nvar label = if (x > 5) { "big" } else { "small" }\nprint(to_string(x) + " is " + label)\n'
+    },
+    {
+      name: "Loops",
+      code: '// For loop\nfor (var i = 0; i < 5; ++i) {\n  print("i = " + to_string(i))\n}\n\n// While loop\nvar n = 1\nwhile (n <= 32) {\n  print("2^" + to_string(n) + " region")\n  n = n * 2\n}\n\n// Range-based for\nvar items = [10, 20, 30, 40, 50]\nfor (item : items) {\n  print("item: " + to_string(item))\n}\n'
+    },
+    {
+      name: "Strings",
+      code: '// String operations\nvar s = "Hello, ChaiScript!"\nprint("Original: " + s)\nprint("Size: " + to_string(s.size()))\nprint("Find \'Chai\': " + to_string(s.find("Chai")))\n\n// String concatenation\nvar first = "Chai"\nvar second = "Script"\nprint(first + second)\n\n// Converting to string\nprint("The answer is " + to_string(42))\nprint("Pi is about " + to_string(3.14))\n'
+    },
+    {
+      name: "Vectors &amp; Maps",
+      code: '// Vectors\nvar v = [1, 2, 3, 4, 5]\nprint("Vector: " + to_string(v))\nprint("Size: " + to_string(v.size()))\nprint("First: " + to_string(v[0]))\n\nv.push_back(6)\nprint("After push_back: " + to_string(v))\n\n// Maps\nvar m = ["name": "ChaiScript", "version": "7"]\nprint("Name: " + m["name"])\nprint("Version: " + m["version"])\n\nm["author"] = "Jason Turner"\nprint("Author: " + m["author"])\n'
+    },
+    {
+      name: "Lambdas",
+      code: '// Lambda functions\nvar square = fun(x) { return x * x }\nvar add = fun(a, b) { return a + b }\n\nprint("square(5) = " + to_string(square(5)))\nprint("add(3, 4) = " + to_string(add(3, 4)))\n\n// Higher-order functions\ndef apply(f, x) {\n  return f(x)\n}\n\nprint("apply(square, 7) = " + to_string(apply(square, 7)))\n\n// Lambda with capture\nvar offset = 10\nvar add_offset = fun(x) { return x + offset }\nprint("add_offset(5) = " + to_string(add_offset(5)))\n'
+    },
+    {
+      name: "Classes",
+      code: '// Classes and objects\nclass Point {\n  var x\n  var y\n  def Point(x, y) {\n    this.x = x\n    this.y = y\n  }\n  def to_string() {\n    return "(" + to_string(this.x) + ", " + to_string(this.y) + ")"\n  }\n}\n\nvar p1 = Point(3, 4)\nvar p2 = Point(1, 2)\nprint("p1 = " + p1.to_string())\nprint("p2 = " + p2.to_string())\nprint("p1.x = " + to_string(p1.x))\n'
+    },
+    {
+      name: "Guards",
+      code: '// Method guards\ndef describe(x) : x > 0 {\n  print(to_string(x) + " is positive")\n}\n\ndef describe(x) : x < 0 {\n  print(to_string(x) + " is negative")\n}\n\ndef describe(x) : x == 0 {\n  print(to_string(x) + " is zero")\n}\n\ndescribe(5)\ndescribe(-3)\ndescribe(0)\n'
+    },
+    {
+      name: "Error Handling",
+      code: '// Error handling with try/catch\ntry {\n  var x = 10 / 0\n  print("This may or may not print")\n} catch (e) {\n  print("Caught: " + to_string(e))\n}\n\n// Throwing exceptions\ndef safe_sqrt(x) {\n  if (x < 0) {\n    throw("Cannot take sqrt of negative number")\n  }\n  // Simple Newton\'s method approximation\n  var guess = x / 2.0\n  for (var i = 0; i < 20; ++i) {\n    guess = (guess + x / guess) / 2.0\n  }\n  return guess\n}\n\nprint("sqrt(25) = " + to_string(safe_sqrt(25.0)))\n\ntry {\n  safe_sqrt(-1.0)\n} catch (e) {\n  print("Caught: " + to_string(e))\n}\n'
+    },
+    {
+      name: "Scope &amp; Variables",
+      code: '// Variable scoping\nvar x = "global"\n\ndef show_scope() {\n  var x = "local"\n  print("Inside function: " + x)\n}\n\nshow_scope()\nprint("Outside function: " + x)\n\n// Global assignment\ndef modify_global() {\n  // Use := for global reassignment\n  x = "modified"\n}\n\nmodify_global()\nprint("After modify: " + x)\n'
+    }
+  ];
+
+  function buildSidebar() {
+    for (var i = 0; i < examples.length; ++i) {
+      var btn = document.createElement('button');
+      btn.className = 'example-item';
+      btn.innerHTML = examples[i].name;
+      btn.setAttribute('data-index', i);
+      btn.addEventListener('click', function() {
+        selectExample(parseInt(this.getAttribute('data-index'), 10));
+      });
+      sidebar.appendChild(btn);
+    }
+  }
+
+  function selectExample(index) {
+    var items = sidebar.querySelectorAll('.example-item');
+    for (var i = 0; i < items.length; ++i) {
+      items[i].className = 'example-item' + (i === index ? ' active' : '');
+    }
+    inputEl.value = examples[index].code;
+    outputEl.innerHTML = '';
+    if (runtimeReady) {
+      runCode();
+    }
+  }
 
   function appendOutput(text, className) {
     var line = document.createElement('div');
@@ -156,6 +281,8 @@ print("10! = " + to_string(factorial(10)))
       statusEl.textContent = 'Ready';
       statusEl.className = 'ready';
       btnRun.disabled = false;
+      runtimeReady = true;
+      selectExample(0);
     }
   };
 
@@ -163,19 +290,31 @@ print("10! = " + to_string(factorial(10)))
     var code = inputEl.value;
     if (!code.trim()) { return; }
 
-    appendOutput('> Running...', 'chai-output-line');
+    outputEl.innerHTML = '';
     try {
       Module.eval(code);
     } catch (e) {
       appendOutput('Error: ' + e.message, 'chai-output-error');
     }
-    appendOutput('', 'chai-output-line');
+  }
+
+  function scheduleLiveRun() {
+    if (!chkLive.checked || !runtimeReady) { return; }
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(function() {
+      debounceTimer = null;
+      runCode();
+    }, 500);
   }
 
   btnRun.addEventListener('click', runCode);
   btnClear.addEventListener('click', function() {
     outputEl.innerHTML = '';
   });
+
+  inputEl.addEventListener('input', scheduleLiveRun);
 
   inputEl.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') {
@@ -190,6 +329,8 @@ print("10! = " + to_string(factorial(10)))
       this.selectionStart = this.selectionEnd = start + 2;
     }
   });
+
+  buildSidebar();
 </script>
 <script src="/playground/chaiscript.js"></script>
 
