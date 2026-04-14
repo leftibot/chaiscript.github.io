@@ -56,6 +56,24 @@ assert_file_contains "grammar.html" "railroad"
 # 6. Navigation includes grammar link
 assert_file_contains "_includes/header.html" "grammar"
 
+# 7. Playground has examples sidebar
+assert_file_contains "playground.html" "examples-sidebar"
+assert_file_contains "playground.html" "example-item"
+
+# 8. Playground has live execution with debounce
+assert_file_contains "playground.html" "debounceTimer"
+assert_file_contains "playground.html" "addEventListener.*input"
+
+# 9. Playground examples cover major ChaiScript features
+assert_file_contains "playground.html" "Variables &amp; Types"
+assert_file_contains "playground.html" "Functions"
+assert_file_contains "playground.html" "Loops"
+assert_file_contains "playground.html" "Strings"
+assert_file_contains "playground.html" "Vectors &amp; Maps"
+assert_file_contains "playground.html" "Classes"
+assert_file_contains "playground.html" "Lambdas"
+assert_file_contains "playground.html" "Error Handling"
+
 if [ "$FAIL" -ne 0 ]; then
   echo ""
   echo "RESULT: SOME TESTS FAILED"
