@@ -64,7 +64,15 @@ assert_file_contains "playground.html" "example-item"
 assert_file_contains "playground.html" "debounceTimer"
 assert_file_contains "playground.html" "addEventListener.*input"
 
-# 9. Playground examples cover major ChaiScript features
+# 9. Playground engine is reset between runs (issue #14)
+assert_file_contains "playground.html" "resetEngine"
+assert_file_contains "playground.html" "onAbort"
+
+# 10. Playground catches and displays exceptions with detail (issue #14)
+assert_file_contains "playground.html" "chai-output-error"
+assert_file_contains "playground.html" "engineAborted"
+
+# 11. Playground examples cover major ChaiScript features
 assert_file_contains "playground.html" "Variables &amp; Types"
 assert_file_contains "playground.html" "Functions"
 assert_file_contains "playground.html" "Loops"

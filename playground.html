@@ -270,32 +270,85 @@ title: Playground
     outputEl.scrollTop = outputEl.scrollHeight;
   }
 
-  var Module = {
-    print: function(text) {
-      appendOutput(text);
-    },
-    printErr: function(text) {
-      appendOutput(text, 'chai-output-error');
-    },
-    onRuntimeInitialized: function() {
-      statusEl.textContent = 'Ready';
-      statusEl.className = 'ready';
-      btnRun.disabled = false;
-      runtimeReady = true;
-      selectExample(0);
+  var engineAborted = false;
+  var engineScript = null;
+  var pendingCode = null;
+  var firstLoad = true;
+
+  function setEngineStatus(text, className) {
+    statusEl.textContent = text;
+    statusEl.className = className;
+  }
+
+  function formatError(e) {
+    if (typeof e === 'string') { return e; }
+    if (e && e.message) { return e.message; }
+    try { return String(e); } catch (_) { return 'Unknown error'; }
+  }
+
+  function executePendingCode() {
+    if (!pendingCode) { return; }
+    var code = pendingCode;
+    pendingCode = null;
+    try {
+      Module.eval(code);
+    } catch (e) {
+      appendOutput('Error: ' + formatError(e), 'chai-output-error');
     }
-  };
+  }
+
+  function createModuleConfig() {
+    return {
+      print: function(text) {
+        appendOutput(text);
+      },
+      printErr: function(text) {
+        appendOutput(text, 'chai-output-error');
+      },
+      onAbort: function(what) {
+        engineAborted = true;
+        setEngineStatus('Error \u2014 click Run to retry', 'error');
+        appendOutput('Engine error: ' + formatError(what), 'chai-output-error');
+      },
+      onRuntimeInitialized: function() {
+        engineAborted = false;
+        setEngineStatus('Ready', 'ready');
+        btnRun.disabled = false;
+        runtimeReady = true;
+        if (firstLoad) {
+          firstLoad = false;
+          selectExample(0);
+        } else {
+          executePendingCode();
+        }
+      }
+    };
+  }
+
+  var Module = createModuleConfig();
+
+  function resetEngine() {
+    runtimeReady = false;
+    btnRun.disabled = true;
+    setEngineStatus('Resetting\u2026', 'loading');
+    if (engineScript) {
+      engineScript.parentNode.removeChild(engineScript);
+      engineScript = null;
+    }
+    Module = createModuleConfig();
+    window.Module = Module;
+    engineScript = document.createElement('script');
+    engineScript.src = '/playground/chaiscript.js';
+    document.body.appendChild(engineScript);
+  }
 
   function runCode() {
     var code = inputEl.value;
     if (!code.trim()) { return; }
 
     outputEl.innerHTML = '';
-    try {
-      Module.eval(code);
-    } catch (e) {
-      appendOutput('Error: ' + e.message, 'chai-output-error');
-    }
+    pendingCode = code;
+    resetEngine();
   }
 
   function scheduleLiveRun() {
@@ -331,7 +384,10 @@ title: Playground
   });
 
   buildSidebar();
+
+  engineScript = document.createElement('script');
+  engineScript.src = '/playground/chaiscript.js';
+  document.body.appendChild(engineScript);
 </script>
-<script src="/playground/chaiscript.js"></script>
 
 </body>
